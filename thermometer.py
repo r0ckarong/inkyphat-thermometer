@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import inkyphat
+import math
 import PIL
 from PIL import ImageFont
 
@@ -9,24 +10,49 @@ inkyphat.set_rotation(180)
 
 font = ImageFont.truetype(inkyphat.fonts.AmaticSC, 12)
 
-bulb_width = 64
+bulb_width = 48
 bulb_space = 5
 bulb_fill = bulb_width - (bulb_space * 2)
 margin_bottom = 5
 margin_top = 5
 margin_left = (inkyphat.HEIGHT - bulb_width) / 2
 margin_right = (inkyphat.HEIGHT - bulb_width) / 2
-hi_temp = 50
-low_temp = -20
-lowpoint = margin_bottom
-hipoint = inkyphat.WIDTH - margin_top
+fill_max = inkyphat.WIDTH - margin_top - 2
+tube_width = math.ceil((bulb_width / 3) / 2.) * 2
+tube_x = margin_bottom + bulb_width
+tube_y = margin_left + (bulb_width - (tube_width * 2))
+tube_end = fill_max
+
+hi_temp_c = 50
+low_temp_c = -20
+
+hi_temp_f = 122
+lo_temp_f = -4
+
+hipoint = fill_max
+
 # bulb_open_left =
 # bulb_open_right =
 
-def draw_bulb():
-    # Main bulb
-    inkyphat.arc((lowpoint, margin_left, lowpoint+bulb_width, margin_left+bulb_width), 30, 330, 1)
-    inkyphat.arc((lowpoint-1, margin_left-1, lowpoint+bulb_width+1, margin_left+bulb_width+1), 30, 330, 1)
+def draw_therm():
+    inkyphat.arc((margin_bottom,margin_left,margin_bottom+bulb_width,margin_right+bulb_width), 0, 360, 1)
+    inkyphat.arc((margin_bottom-1,margin_left-1,margin_bottom+bulb_width+1,margin_right+bulb_width+1), 0, 360, 1)
+    inkyphat.rectangle((tube_x - (bulb_width/2), tube_y, (fill_max - tube_width), (tube_y + tube_width)), 0, 0)
+
+    tubeline_top_x = tube_x - 2
+    tubeline_top_y = tube_y - 1
+
+    tubeline_bottom_x = tubeline_top_x
+    tubeline_bottom_y = tube_y + tube_width + 1
+
+    inkyphat.line((tubeline_top_x, tubeline_top_y, fill_max - tube_width / 2, tubeline_top_y), 1, 1)
+    inkyphat.line((tubeline_top_x, (tubeline_top_y - 1), fill_max - tube_width / 2, (tubeline_top_y - 1)), 1, 1)
+
+    inkyphat.line((tubeline_top_x, tubeline_bottom_y, (fill_max - tube_width / 2), tubeline_bottom_y), 1, 1)
+    inkyphat.line((tubeline_top_x, (tubeline_bottom_y + 1), fill_max - tube_width / 2, (tubeline_bottom_y + 1)), 1, 1)
+
+    inkyphat.arc(((fill_max - tube_width), tubeline_top_y, fill_max, tubeline_bottom_y), 270, 90, 1)
+    inkyphat.arc(((fill_max - tube_width + 1), tubeline_top_y - 1, fill_max + 1, tubeline_bottom_y + 1), 270, 90, 1)
 
 def draw_tube():
     # Upper part of tube
@@ -52,16 +78,46 @@ def fill_up():
 def decorate():
     # Reflection
     inkyphat.pieslice((40, 52, 52, 64), 0, 360, 0, 0)
-    # Scale
-    inkyphat.line((202, 20, 202, 36), 1, 1)
+
+    #draw_fahrenheit_scale()
+    draw_celsius_scale()
+
+def draw_fahrenheit_scale():
+    inkyphat.line((fill_max - 140, 0, fill_max, 0), 1, 1)
+    inkyphat.line((fill_max - 140, 1, fill_max, 1), 1, 1)
+    i = 0
+    while i < 126:
+        if i % 10 == 0:
+            inkyphat.line((fill_max - i, 2, fill_max -i, 22), 1, 1)
+        else:
+            inkyphat.line((fill_max - i, 2, fill_max - i, 12), 1, 1)
+        i += 2
+
+def draw_celsius_scale():
+    # inkyphat.line((fill_max - 140, 102, fill_max, 102), 1, 1)
+    # inkyphat.line((fill_max - 140, 103, fill_max, 103), 1, 1)
+    i = 0
+    while i < 141:
+        if i == 100:
+            inkyphat.line((fill_max - i, 103, fill_max - i, 70), 1, 1)
+        elif i % 20 == 0:
+            inkyphat.line((fill_max - i, 103, fill_max - i, 85), 1, 1)
+        elif i % 10 == 0:
+            inkyphat.line((fill_max - i, 103, fill_max - i, 91), 1, 1)
+        elif i % 2 == 0:
+            inkyphat.line((fill_max - i, 103, fill_max - i, 95), 1, 1)
+        else:
+            inkyphat.line((fill_max - i, 103, fill_max - i, 95), 0, 0)
+        i += 1
 
 #test = "20 \xb0"
 
 #inkyphat.text((180, 15), test, inkyphat.BLACK, font).rotate(90)
 
-draw_bulb()
-draw_tube()
-fill_up()
+#draw_bulb()
+#draw_tube()
+draw_therm()
+#fill_up()
 decorate()
 
 inkyphat.show()
