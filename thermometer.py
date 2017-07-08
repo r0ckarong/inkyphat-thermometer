@@ -1,17 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import time
 import inkyphat
+import os
+import pyowm
 import math
-import PIL
-from PIL import ImageFont
+from PIL import ImageFont, ImageDraw, ImageOps
+from PIL import Image
+import schedule
 
 inkyphat.set_rotation(180)
 
-font = ImageFont.truetype(inkyphat.fonts.PressStart2P, 12)
-
-bulb_width = 58
-bulb_space = 4
+bulb_width = 50
+bulb_space = 3
 bulb_fill = bulb_width - (bulb_space * 2)
 margin_bottom = 5
 margin_top = 5
@@ -28,7 +30,12 @@ tubeline_bottom_x = tubeline_top_x
 tubeline_bottom_y = tube_y + tube_width + 1
 fmax = fill_max - (tube_width / 2)
 
-currtemp = 35
+# Data for Openweathermap Query
+owm_key = os.environ["OWM_KEY"]
+owm = pyowm.OWM(owm_key)
+observation = owm.weather_at_zip_code("61449","de")
+w = observation.get_weather()
+currtemp = w.get_temperature('celsius')['temp']
 
 hi_temp_c = 50
 low_temp_c = -20
@@ -70,7 +77,7 @@ def fill_up():
 
 def decorate():
     # Reflection
-    inkyphat.pieslice(((tubeline_bottom_x - bulb_width / 5), (tubeline_bottom_y - bulb_width / 5), (tubeline_bottom_x - bulb_width / 5) + 10, (tubeline_bottom_y - bulb_width / 5) + 10), 0, 360, 0, 0)
+    inkyphat.pieslice(((tubeline_bottom_x - (bulb_width / 5)), (tubeline_bottom_y - (bulb_width / 5)), (tubeline_bottom_x - (bulb_width / 5)) - 20, (tubeline_bottom_y - (bulb_width / 5)) + 10), 0, 360, 0, 0)
 
     # Tube reflection, broken
     #inkyphat.arc((tubeline_top_x,tubeline_top_y,tubeline_bottom_x+tube_width,tubeline_bottom_y), 90, 270, 0)
@@ -78,10 +85,13 @@ def decorate():
     #draw_fahrenheit_scale()
     draw_celsius_scale()
 
-    text = str(currtemp) + "C"
-    inkyphat.text((margin_bottom + 2 + bulb_space + (bulb_width / 4),margin_left + 2 + bulb_space + (bulb_width / 4)), text, inkyphat.WHITE, font)
+    # Draw current temperature in the bulb area
+    font = ImageFont.truetype(inkyphat.fonts.PressStart2P, 9)
+    text = round(currtemp) + "C"
+    pr = inkyphat.text((margin_bottom + 2 + bulb_space + (bulb_width / 4),margin_left + 2 + bulb_space + (bulb_width / 4)), text, inkyphat.WHITE, font)
 
 def draw_fahrenheit_scale():
+    """Does not work"""
     inkyphat.line((fill_max - 140, 0, fill_max, 0), 1, 1)
     inkyphat.line((fill_max - 140, 1, fill_max, 1), 1, 1)
     i = 0
@@ -98,23 +108,39 @@ def draw_celsius_scale():
     i = 0
     while i < 141:
         if i == 100:
-            inkyphat.line((fmax - i, 103, fmax - i, 70), 1, 1)
+            inkyphat.line((fmax - i, tubeline_top_y - 5, fmax - i, tubeline_top_y - 5 - 33), 1, 1)
+            inkyphat.line((fmax - i, tubeline_bottom_y + 5, fmax - i, tubeline_bottom_y + 5 + 33), 1, 1)
         elif i % 20 == 0:
-            inkyphat.line((fmax - i, 103, fmax - i, 85), 1, 1)
+            inkyphat.line((fmax - i, tubeline_top_y - 5, fmax - i, tubeline_top_y - 5 - 18), 1, 1)
+            inkyphat.line((fmax - i, tubeline_bottom_y + 5, fmax - i, tubeline_bottom_y + 5 + 18), 1, 1)
+            # inkyphat.line((fmax - i, 103, fmax - i, 85), 1, 1)
         elif i % 10 == 0:
-            inkyphat.line((fmax - i, 103, fmax - i, 91), 1, 1)
+            inkyphat.line((fmax - i, tubeline_top_y - 5, fmax - i, tubeline_top_y - 5 - 12), 1, 1)
+            inkyphat.line((fmax - i, tubeline_bottom_y + 5, fmax - i, tubeline_bottom_y + 5 + 12), 1, 1)
+            # inkyphat.line((fmax - i, 103, fmax - i, 91), 1, 1)
         elif i % 2 == 0:
-            inkyphat.line((fmax - i, 103, fmax - i, 95), 1, 1)
+            inkyphat.line((fmax - i, tubeline_top_y - 5, fmax - i, tubeline_top_y - 5 - 8), 1, 1)
+            inkyphat.line((fmax - i, tubeline_bottom_y + 5, fmax - i, tubeline_bottom_y + 5 + 8), 1, 1)
+            # inkyphat.line((fmax - i, 103, fmax - i, 95), 1, 1)
         else:
-            inkyphat.line((fmax - i, 103, fmax - i, 95), 0, 0)
+            inkyphat.line((fmax - i, tubeline_top_y - 5, fmax - i, tubeline_top_y - 5 - 8), 0, 0)
+            inkyphat.line((fmax - i, tubeline_bottom_y + 5, fmax - i, tubeline_bottom_y + 5 + 8), 0, 0)
+            # inkyphat.line((fmax - i, 103, fmax - i, 95), 0, 0)
         i += 1
+
+def refresh():
+    draw_therm()
+    fill_up()
+    decorate()
+    inkyphat.show()
 
 # test = "20 \xb0"
 #
 # inkyphat.text((150, 15), test, inkyphat.BLACK, font)
 
-draw_therm()
-fill_up()
-decorate()
+schedule.every(5).minutes.do(refresh)
 
-inkyphat.show()
+while True:
+    schedule.run_pending()
+
+    time.sleep(240)
