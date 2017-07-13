@@ -15,6 +15,7 @@ inkyphat.set_rotation(180)
 bulb_width = 50
 bulb_space = 3
 bulb_fill = bulb_width - (bulb_space * 2)
+font_size = 10
 margin_bottom = 5
 margin_top = 5
 margin_left = (inkyphat.HEIGHT - bulb_width) / 2
@@ -29,19 +30,22 @@ tubeline_top_y = tube_y - 1
 tubeline_bottom_x = tubeline_top_x
 tubeline_bottom_y = tube_y + tube_width + 1
 fmax = fill_max - (tube_width / 2)
-
-# Data for Openweathermap Query
-owm_key = os.environ["OWM_KEY"]
-owm = pyowm.OWM(owm_key)
-observation = owm.weather_at_zip_code("61449","de")
-w = observation.get_weather()
-currtemp = w.get_temperature('celsius')['temp']
+currtemp = 0
 
 hi_temp_c = 50
 low_temp_c = -20
 
 # hi_temp_f = 122
 # lo_temp_f = -4
+
+def get_temp():
+    global currtemp
+    """Data for Openweathermap Query"""
+    owm_key = os.environ["OWM_KEY"]
+    owm = pyowm.OWM(owm_key)
+    observation = owm.weather_at_zip_code("61449","de")
+    w = observation.get_weather()
+    currtemp = w.get_temperature('celsius')['temp']
 
 def draw_therm():
     inkyphat.arc((margin_bottom,margin_left,margin_bottom+bulb_width,margin_right+bulb_width), 0, 360, 1)
@@ -76,19 +80,23 @@ def fill_up():
     # inkyphat.pieslice((tubeline_top_x - (bulb_width / 2), 42, (fill_max - tube_width + tube_width / 2), 62), 270, 90, 2, 2)
 
 def decorate():
+    #draw_fahrenheit_scale()
+    draw_celsius_scale()
+    draw_temperature()
+    # reflection()
+
+#def reflection():
     # Reflection
-    inkyphat.pieslice(((tubeline_bottom_x - (bulb_width / 5)), (tubeline_bottom_y - (bulb_width / 5)), (tubeline_bottom_x - (bulb_width / 5)) - 20, (tubeline_bottom_y - (bulb_width / 5)) + 10), 0, 360, 0, 0)
+    #inkyphat.pieslice(((tubeline_bottom_x - (bulb_width / 5)), (tubeline_bottom_y - (bulb_width / 5)), (tubeline_bottom_x - (bulb_width / 5)) - 20, (tubeline_bottom_y - (bulb_width / 5)) + 10), 0, 360, 0, 0)
 
     # Tube reflection, broken
     #inkyphat.arc((tubeline_top_x,tubeline_top_y,tubeline_bottom_x+tube_width,tubeline_bottom_y), 90, 270, 0)
 
-    #draw_fahrenheit_scale()
-    draw_celsius_scale()
-
-    # Draw current temperature in the bulb area
-    font = ImageFont.truetype(inkyphat.fonts.PressStart2P, 9)
-    text = round(currtemp) + "C"
-    pr = inkyphat.text((margin_bottom + 2 + bulb_space + (bulb_width / 4),margin_left + 2 + bulb_space + (bulb_width / 4)), text, inkyphat.WHITE, font)
+def draw_temperature():
+    """Draw current temperature in the bulb area"""
+    font = ImageFont.truetype(inkyphat.fonts.PressStart2P, font_size)
+    text = str(int(round(currtemp))) + "C"
+    pr = inkyphat.text((margin_bottom + bulb_space + (bulb_width / 4),tubeline_top_y + (font_size - bulb_space)), text, inkyphat.WHITE, font)
 
 def draw_fahrenheit_scale():
     """Does not work"""
@@ -129,6 +137,7 @@ def draw_celsius_scale():
         i += 1
 
 def refresh():
+    get_temp()
     draw_therm()
     fill_up()
     decorate()
@@ -138,9 +147,11 @@ def refresh():
 #
 # inkyphat.text((150, 15), test, inkyphat.BLACK, font)
 
+refresh()
+
 schedule.every(5).minutes.do(refresh)
 
 while True:
     schedule.run_pending()
 
-    time.sleep(240)
+    time.sleep(30)
